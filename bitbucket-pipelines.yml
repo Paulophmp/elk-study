@@ -1,0 +1,93 @@
+options:
+  docker: true
+
+definitions:
+  services:
+    docker:
+      memory: 4096
+  steps:
+    - step: &default
+        service:
+          - docker
+        size: 2x # Double resources available for this step.
+        caches:
+          - docker
+        image: atlassian/pipelines-awscli:latest
+        name: Build docker image and push docker image to ECR
+
+  docker-build-prod: &docker-build-prod
+                       cd logstash;
+                       export DOCKER_IMAGE_TAG=v$(jq -r '.version' version.json);
+                       TAG_EXIST=$(git tag -l $DOCKER_IMAGE_TAG);
+                       if [[ -z $TAG_EXIST ]]; then
+                        git tag -a $DOCKER_IMAGE_TAG -m '$TAG_DESCRIPTION';
+                        git push origin $DOCKER_IMAGE_TAG;
+                        eval $(aws ecr get-login --region ${AWS_DEFAULT_REGION} --no-include-email);
+                        export IMAGE_NAME="${AWS_REGISTRY_URL}/${BITBUCKET_REPO_SLUG}";
+                        docker build -f .Dockerfile  -t "$IMAGE_NAME:$DOCKER_IMAGE_TAG" -t "$IMAGE_NAME:latest" .;
+                        docker push "$IMAGE_NAME:$DOCKER_IMAGE_TAG";
+                        docker push "$IMAGE_NAME:latest";
+                       fi;
+                       export IMAGE_NAME="${AWS_REGISTRY_URL}/${BITBUCKET_REPO_SLUG}:${DOCKER_IMAGE_TAG}"
+
+  clone-infra-scripts: &clone-infra-scripts
+                         apk add openssh-client;
+                         git clone git@bitbucket.org:ggeducacional/infra-scripts.git -b ${INFRA_SCRIPTS_VERSION};
+                         chmod a+x ./infra-scripts/pipeline/*;
+
+  aws-ecs-update: &aws-ecs-update
+                    aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --region $AWS_DEFAULT_REGION;
+
+pipelines:
+  branches:
+    hotfix/*:
+      - step:
+          <<: *default
+          deployment: Production
+          script:
+            # BUILD IMAGEM DOCKER e PUBLICA GIT TAG
+            - *docker-build-prod
+
+            # CONFIGURA VARIAVEIS DE AMBIENTE DA APLICACAO
+            - *clone-infra-scripts
+            - ./infra-scripts/pipeline/cria-env-task-definition.sh $AWS_ECS_SERVICE_NAME
+
+    release/v*:
+      - step:
+          <<: *default
+          deployment: Staging
+          script:
+            # BUILD IMAGEM DOCKER e PUBLICA GIT TAG
+            - *docker-build-prod
+
+            # CONFIGURA VARIAVEIS DE AMBIENTE DA APLICACAO
+            - *clone-infra-scripts
+            - ./infra-scripts/pipeline/cria-env-task-definition.sh $AWS_ECS_SERVICE_NAME
+            
+    master:
+      - step:
+          <<: *default
+          name: Deploy in Production? 
+          script:
+            - echo "Aprovar manualmente."
+
+      - step:
+          <<: *default
+          name: Deploy in Production
+          deployment: Production
+          trigger: manual
+          script:
+            # CONSTROI E PUBLICA A IMAGEM
+            - cd logstash
+            - export DOCKER_IMAGE_TAG=v$(jq -r '.version' version.json)
+            - export IMAGE_NAME="${AWS_REGISTRY_URL}/${BITBUCKET_REPO_SLUG}:$DOCKER_IMAGE_TAG"
+
+            # CONFIGURA VARIAVEIS DE AMBIENTE DA APLICACAO
+            - *clone-infra-scripts
+            - ./infra-scripts/pipeline/cria-env-task-definition.sh $AWS_ECS_SERVICE_NAME
+
+            # REGISTRA AS TASKS E ATUALIZA O SERVICO
+            - *aws-ecs-update
+
+            # REGISTRA ATUALIZA SCHEDULE JOBS
+            - ./infra-scripts/pipeline/cria-ecs-schedule-jobs.sh ../project.yaml
