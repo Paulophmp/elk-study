@@ -1,0 +1,19 @@
+# IDE / Editor
+.idea/
+*.iml
+.vscode/
+
+# Logs
+*.log
+
+# Dados persistidos do Elasticsearch
+es_data/
+*/es_data/
+data/
+
+# Arquivos temporários do Logstash
+.sincedb*
+
+# Arquivos sensíveis
+*.env
+secrets/
