@@ -5,6 +5,20 @@ O objetivo é praticar a ingestão, processamento e visualização de dados JSON
 
 ---
 
+
+## Resumo dos Componentes da Stack ELK
+
+| Componente        | Função Principal                                                                 |
+|--------------------|----------------------------------------------------------------------------------|
+| **Elasticsearch**  | Armazena e indexa os dados. É o mecanismo de busca e análise da stack.           |
+| **Logstash**       | Lê, transforma e envia dados para o Elasticsearch a partir de diversas fontes.   |
+| **Kibana**         | Interface gráfica para explorar, visualizar e criar dashboards dos dados.        |
+| **Docker Compose** | Orquestra todos os containers e simplifica o processo de subir o ambiente ELK.   |
+
+
+
+---
+
 ## 📦 Serviços
 
 - **Elasticsearch:** http://localhost:9200  
