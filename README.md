@@ -3,6 +3,24 @@
 Este é um **projeto de estudo da ELK Stack** (Elasticsearch, Logstash e Kibana) usando Docker Compose.  
 O objetivo é praticar a ingestão, processamento e visualização de dados JSON com Logstash e Elasticsearch.
 
+🧩 O que é a Stack ELK?
+
+A ELK Stack é um conjunto de ferramentas open-source da Elastic, usadas para coletar, processar, armazenar e visualizar dados em tempo real.
+
+---
+
+
+## Resumo dos Componentes da Stack ELK
+
+| Componente        | Função Principal                                                                 |
+|--------------------|----------------------------------------------------------------------------------|
+| **Elasticsearch**  | Armazena e indexa os dados. É o mecanismo de busca e análise da stack.           |
+| **Logstash**       | Lê, transforma e envia dados para o Elasticsearch a partir de diversas fontes.   |
+| **Kibana**         | Interface gráfica para explorar, visualizar e criar dashboards dos dados.        |
+| **Docker Compose** | Orquestra todos os containers e simplifica o processo de subir o ambiente ELK.   |
+
+
+
 ---
 
 ## 📦 Serviços
